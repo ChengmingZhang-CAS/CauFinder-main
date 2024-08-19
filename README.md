@@ -17,7 +17,7 @@ a, Schematic representation of the CauFinder framework for steering state or phe
    ```
 2. Create and activate a Conda environment:
    ```bash
-   conda env create -f environment.yml
+   conda env create -n caufinder_env -f environment.yml
    conda activate caufinder_env
    ```
 3. Install additional dependencies (if necessary):
