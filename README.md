@@ -1,12 +1,14 @@
-```markdown
+
 # CauFinder
 
 ## Overview
-# Steering cell-state and phenotype transitions by causal disentanglement learning
 
-![CauFinder Overview](docs/CauFinder_overview.tif)
+Understanding and manipulating cell-state and phenotype transitions is crucial in biological research and therapeutic treatment. CauFinder is an advanced framework designed to steer such transitions by integrating causal disentanglement modeling with network control. By leveraging do-calculus and optimizing information flow metrics, CauFinder distinguishes causal factors from spurious ones, ensuring targeted and accurate state control.
+
+![CauFinder Overview](docs/CauFinder_overview.png)
 
 **Figure Description:**
+
 Overview of the CauFinder framework. a, Schematic representation of the CauFinder framework for steering state or phenotype transitions by identifying key drivers through causal disentanglement and network control. b, Structural causal model showing the decomposition of original features x={x^c,x^s } into their latent representations z={z^c,z^s }, with y denoting the state or phenotype. c, Causal decoupling model constructed on a variational autoencoder (VAE) framework to identify causal drivers influencing state or phenotype transitions. Features x are processed through a feature selection layer, encoded to create a latent space z, segmented into causal (z^c) and spurious (z^s) components. This latent space is decoded to reconstruct the original features x as x ̂ and to predict the phenotype y. The model strives to maximize the causal information flow, I(z^c→y), from z^c to y, thus delineating the causal pathways from x to y via z^c and identifying the causal drivers for precise transition control. d, Master regulator identification via causality-weighted features and network control. Techniques including SHAP and gradient are used to assign causality weights to features within the causal path defined in c, aiding in the isolation of causal features for integration with prior network insights. Weighed directed feedback vertex set is then employed to pinpoint master regulators critical for directing state or phenotype transitions through counterfactual generation for causal state transition, thereby establishing the foundation for targeted interventions.
 
 ## Installation
@@ -47,9 +49,8 @@ This project is licensed under the MIT License - see the `LICENSE` file for deta
 
 If you use CauFinder in your research, please cite the following paper:
 
-Zhang Chengming, et al. "Steering cell-state and phenotype transitions by causal disentanglement learning." *bioRxiv* (2024): [https://doi.org/10.1101/2024.08.16.607277](https://doi.org/10.1101/2024.08.16.607277).
+Chengming Zhang, Zexi Chen, Yuanxiang Miao, Yun Xue, Deyu Cai, Weifeng Guo, Hongbin Ji, Kazuyuki Aihara, Luonan Chen. "Steering cell-state and phenotype transitions by causal disentanglement learning." *bioRxiv* (2024): [https://doi.org/10.1101/2024.08.16.607277](https://doi.org/10.1101/2024.08.16.607277).
 
 ## Contact
 
 For questions or issues, please contact Chengming Zhang at zhangchengming@g.ecc.u-tokyo.ac.jp.
-```
