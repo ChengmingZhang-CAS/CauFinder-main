@@ -6,7 +6,8 @@ Understanding and manipulating cell-state and phenotype transitions is critical 
 ![CauFinder Overview](docs/CauFinder_overview.png)
 
 **Overview of the CauFinder framework:**
-**a**, Schematic representation of the CauFinder framework for steering state or phenotype transitions by identifying key drivers through causal disentanglement and network control. **b**, Structural causal model showing the decomposition of original features \( x = \{x^c, x^s\} \) into their latent representations \( z = \{z^c, z^s\} \), with \( y \) denoting the state or phenotype. **c**, Causal decoupling model constructed on a variational autoencoder (VAE) framework to identify causal drivers influencing state or phenotype transitions. Features \( x \) are processed through a feature selection layer, encoded to create a latent space \( z \), segmented into causal (\( z^c \)) and spurious (\( z^s \)) components. This latent space is decoded to reconstruct the original features \( \hat{x} \) and to predict the phenotype \( y \). The model strives to maximize the causal information flow, \( I(z^c \rightarrow y) \), from \( z^c \) to \( y \), thus delineating the causal pathways from \( x \) to \( y \) via \( z^c \) and identifying the causal drivers for precise transition control. **d**, Master regulator identification via causality-weighted features and network control. Techniques including SHAP and gradient are used to assign causality weights to features within the causal path defined in **c**, aiding in the isolation of causal features for integration with prior network insights. Weighed directed feedback vertex set is then employed to pinpoint master regulators critical for directing state or phenotype transitions through counterfactual generation for causal state transition, thereby establishing the foundation for targeted interventions.
+**a**, Schematic representation of the CauFinder framework for steering state or phenotype transitions by identifying key drivers through causal disentanglement and network control. **b**, Structural causal model showing the decomposition of original features \( x = \{x^c, x^s\} \) into their latent representations \( z = \{z^c, z^s\} \), with \( y \) denoting the state or phenotype. **c**, Causal decoupling model constructed on a variational autoencoder (VAE) framework to identify causal drivers influencing state or phenotype transitions. Features x are processed through a feature selection layer, encoded to create a latent space z, segmented into causal (z^c) and spurious (z^s) components. This latent space is decoded to reconstruct the original features \( \hat{x} \) and to predict the phenotype y. The model strives to maximize the causal information flow, I(z^c → y), from z^c to y, thus delineating the causal pathways from x to y via z^c and identifying the causal drivers for precise transition control. **d**, Master regulator identification via causality-weighted features and network control. Techniques including SHAP and gradient are used to assign causality weights to features within the causal path defined in c, aiding in the isolation of causal features for integration with prior network insights. Weighed directed feedback vertex set is then employed to pinpoint master regulators critical for directing state or phenotype transitions through counterfactual generation for causal state transition, thereby establishing the foundation for targeted interventions.
+
 
 ## Installation
 
@@ -26,11 +27,19 @@ Understanding and manipulating cell-state and phenotype transitions is critical 
 
 ## Quick Start
 
-To quickly get started with CauFinder, run the following tutorial script:
+To quickly get started with CauFinder, you can begin with the following scripts:
 
-```bash
-python tutorials/LUAS_human_analysis.py
-```
+1. **Simulated Data**:
+   For causal disentanglement analysis without prior network control, run the following script:
+   ```bash
+   python tutorials/bm_simData_linear.py
+   ```
+
+2. **Real Data (LUAS)**:
+   For causal analysis with prior network control using real LUAS data, run:
+   ```bash
+   python tutorials/LUAS_human_analysis.py
+   ```
 
 ### Using GUROBI for Master Regulator Identification
 
