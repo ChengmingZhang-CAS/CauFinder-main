@@ -47,6 +47,12 @@ To effectively identify master regulators using network control, we recommend ut
 
 In cases where using GUROBI is not feasible, you can use the non-commercial solver SCIP as an alternative, but successful solutions are not guaranteed with SCIP.
 
+## Documentation and Tutorials
+
+For detailed documentation and tutorials, please visit our official CauFinder tutorial website:
+
+[CauFinder Tutorials](https://caufinder-tutorials.readthedocs.io/en/latest/index.html)
+
 ## License
 
 This project is licensed under the MIT License - see the `LICENSE` file for details.
@@ -60,3 +66,4 @@ Chengming Zhang, Zexi Chen, Yuanxiang Miao, Yun Xue, Deyu Cai, Weifeng Guo, Hong
 ## Contact
 
 For questions or issues, please contact Chengming Zhang at zhangchengming@g.ecc.u-tokyo.ac.jp.
+
