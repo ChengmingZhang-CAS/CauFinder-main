@@ -43,9 +43,10 @@ To quickly get started with CauFinder, you can begin with the following scripts:
 
 ### Using GUROBI for Master Regulator Identification
 
-To effectively identify master regulators using network control, we recommend utilizing GUROBI to solve the optimization problem. GUROBI is a powerful commercial solver that requires a license to run. However, it provides free academic licenses as well as trial licenses for non-academic use. If you have a valid license, install the `gurobipy` package to enable this functionality.
+To effectively identify master regulators using network control, we recommend utilizing [GUROBI](https://www.gurobi.com/) to solve the optimization problem. GUROBI is a powerful commercial solver that requires a license to run. However, it provides free academic licenses as well as trial licenses for non-academic use. If you have a valid license, install the `gurobipy` package to enable this functionality.
 
-In cases where using GUROBI is not feasible, you can use the non-commercial solver SCIP as an alternative, but successful solutions are not guaranteed with SCIP.
+In cases where using GUROBI is not feasible, you can use the non-commercial solver [SCIP](https://www.scipopt.org/) as an alternative, but successful solutions are not guaranteed with SCIP.
+
 
 ## Documentation and Tutorials
 
@@ -66,4 +67,3 @@ Chengming Zhang, Zexi Chen, Yuanxiang Miao, Yun Xue, Deyu Cai, Weifeng Guo, Hong
 ## Contact
 
 For questions or issues, please contact Chengming Zhang at zhangchengming@g.ecc.u-tokyo.ac.jp.
-
