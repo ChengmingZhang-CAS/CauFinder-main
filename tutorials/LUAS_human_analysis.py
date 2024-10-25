@@ -53,7 +53,8 @@ tf_path = os.path.join(BASE_DIR, 'resources', 'tf', 'hs_hgnc_tfs_lambert2018.txt
 network_path = os.path.join(BASE_DIR, 'resources', 'network', 'NicheNet_human.csv')
 tf_list = pd.read_csv(tf_path, header=None, squeeze=True).tolist()
 prior_network = pd.read_csv(network_path, index_col=None, header=0)
-adata, adata_filter = load_luas_human_adata(data_dir=data_path, tf_list=tf_list)
+adata_raw, adata_filter = load_luas_human_adata(data_dir=data_path, tf_list=tf_list)
+adata = adata_filter.copy()
 
 # In[5]:
 
@@ -250,8 +251,9 @@ sc.pl.umap(test_adata, color='sample_idx', legend_loc="on data", size=1200, lege
 
 plot_3d_state_transition(adata_decrease, sample_indices=[67, 53, 45], use_pca=True, elev=20, azim=60)
 
-save_path = os.path.join(output_path, 'decrease')
-os.makedirs(save_path, exist_ok=True)
-plot_3d_state_transition(adata_decrease, sample_indices=[67, 53, 45], use_pca=False, feature1='NKX2-1', feature2='SOX2',
-                         save_path=save_path, elev=30, azim=30)
+# Choose the the intererted gene paires
+# save_path = os.path.join(output_path, 'decrease')
+# os.makedirs(save_path, exist_ok=True)
+# plot_3d_state_transition(adata_decrease, sample_indices=[67, 53, 45], use_pca=False, feature1='NKX2-1', feature2='SOX2',
+#                          save_path=save_path, elev=30, azim=30)
 
