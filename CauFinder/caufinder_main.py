@@ -61,6 +61,7 @@ class CausalFinder(nn.Module):
             adata: AnnData,
             n_latent: int = 10,
             n_causal: int = 2,  # Number of casual factors
+            n_state: int = 2,  # Number of states (set to 2 for binary or 0-1 continuous states)
             # n_controls: int = 10,  # Number of upstream features
             **model_kwargs,
     ):
@@ -70,6 +71,7 @@ class CausalFinder(nn.Module):
         self.val_adata = None
         self.n_latent = n_latent
         self.n_causal = n_causal
+        self.n_state = n_state
         # self.n_controls = n_controls
         self.batch_size = None
         self.ce_params = None
@@ -79,6 +81,7 @@ class CausalFinder(nn.Module):
             n_input=adata.X.shape[1],
             n_latent=n_latent,
             n_causal=n_causal,
+            n_state=n_state,
             # n_controls=n_controls,
             **model_kwargs,
         )
@@ -133,7 +136,7 @@ class CausalFinder(nn.Module):
             "K": self.n_causal,
             "L": self.n_latent - self.n_causal,
             "z_dim": self.n_latent,
-            "M": 2,
+            "M": self.n_state,
         }
         self.ce_params = ce_params
         loss_weights = {

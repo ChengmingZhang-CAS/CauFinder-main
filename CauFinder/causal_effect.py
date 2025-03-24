@@ -53,7 +53,11 @@ def joint_uncond_v1(params, model, data, index, alpha_vi=False, beta_vi=True, ep
     # x_down, _ = model.feature_selector(x_top_rec, keep_top=False, keep_not_top=True)
     logit, prob = model.dpd_model(zs).values()
 
-    yhat = torch.cat((prob, 1 - prob), dim=1).view(params['N_alpha'], params['N_beta'], params['M'])
+    # yhat = torch.cat((prob, 1 - prob), dim=1).view(params['N_alpha'], params['N_beta'], params['M'])
+    if params['M'] == 2:
+        yhat = torch.cat((prob, 1 - prob), dim=1).view(params['N_alpha'], params['N_beta'], params['M'])
+    else:
+        yhat = prob.view(params['N_alpha'], params['N_beta'], params['M'])
     p = yhat.mean(1)
     I = torch.sum(torch.mul(p, torch.log(p + eps)), dim=1).mean()
     # I = torch.sum(torch.mul(p, F.log_softmax(p, dim=1)), dim=1).mean()
@@ -96,7 +100,11 @@ def beta_info_flow_v1(params, model, data, index, alpha_vi=True, beta_vi=False, 
     # x_down, _ = model.feature_selector(x_top_rec, keep_top=False, keep_not_top=True)
     logit, prob = model.dpd_model(zs).values()
 
-    yhat = torch.cat((prob, 1 - prob), dim=1).view(params['N_alpha'], params['N_beta'], params['M'])
+    # yhat = torch.cat((prob, 1 - prob), dim=1).view(params['N_alpha'], params['N_beta'], params['M'])
+    if params['M'] == 2:
+        yhat = torch.cat((prob, 1 - prob), dim=1).view(params['N_alpha'], params['N_beta'], params['M'])
+    else:
+        yhat = prob.view(params['N_alpha'], params['N_beta'], params['M'])
     p = yhat.mean(1)
     I = torch.sum(torch.mul(p, torch.log(p + eps)), dim=1).mean()
     # I = torch.sum(torch.mul(p, F.log_softmax(p, dim=1)), dim=1).mean()
@@ -156,7 +164,11 @@ def joint_uncond_single_dim_v1(params, model, data, index, dim, alpha_vi=False, 
     zs = torch.randn((params['N_alpha'] * params['N_beta'], params['z_dim']), device=device).mul(beta_std).add_(beta_mu)
     zs[:, dim] = alpha[:, 0]
     logit, prob = model.dpd_model(zs).values()
-    yhat = torch.cat((prob, 1 - prob), dim=1).view(params['N_alpha'], params['N_beta'], params['M'])
+    # yhat = torch.cat((prob, 1 - prob), dim=1).view(params['N_alpha'], params['N_beta'], params['M'])
+    if params['M'] == 2:
+        yhat = torch.cat((prob, 1 - prob), dim=1).view(params['N_alpha'], params['N_beta'], params['M'])
+    else:
+        yhat = prob.view(params['N_alpha'], params['N_beta'], params['M'])
     p = yhat.mean(1)
     I = torch.sum(torch.mul(p, torch.log(p + eps)), dim=1).mean()
     # I = torch.sum(torch.mul(p, F.log_softmax(p, dim=1)), dim=1).mean()

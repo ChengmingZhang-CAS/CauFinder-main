@@ -216,7 +216,7 @@ class DynamicPhenotypeDescriptor(nn.Module):
     def __init__(
             self,
             n_input: int,
-            n_output: int = 1,
+            n_state: int = 2,  # number of states
             n_layers: int = 1,
             n_hidden: int = 128,
             dropout_rate: float = 0.0,
@@ -224,9 +224,12 @@ class DynamicPhenotypeDescriptor(nn.Module):
             **kwargs,
     ):
         super(DynamicPhenotypeDescriptor, self).__init__()
+        self.n_state = n_state  # Store `n_state`
         self.linear = linear
+        self.n_output = n_state - 1 if n_state == 2 else n_state
+
         if self.linear:
-            self.dpd = nn.Linear(n_input, n_output)
+            self.dpd = nn.Linear(n_input, self.n_output)
         else:
             self.dpd1 = MLP(
                 input_dim=n_input,
@@ -235,8 +238,13 @@ class DynamicPhenotypeDescriptor(nn.Module):
                 dropout_rate=dropout_rate,
                 **kwargs,
             )
-            self.dpd2 = nn.Linear(n_hidden, n_output)
-        self.activation = nn.Sigmoid()
+            self.dpd2 = nn.Linear(n_hidden, self.n_output)
+
+        # Set activation based on `n_output`
+        if self.n_output == 1:
+            self.activation = nn.Sigmoid()  # Binary classification (n_state=2) or soft label
+        else:
+            self.activation = nn.Softmax(dim=1)  # Multi-class classification (n_state>2)
 
     def forward(self, x):
         if self.linear:

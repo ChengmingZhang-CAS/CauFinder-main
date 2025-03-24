@@ -32,6 +32,7 @@ class DCDVAE(nn.Module):
         n_hidden: int = 128,
         n_latent: int = 20,
         n_causal: int = 2,
+        n_state: int = 2,
         # n_controls: int = 10,
         # scale: float = 1.0,
         n_layers_encoder: int = 0,
@@ -54,6 +55,7 @@ class DCDVAE(nn.Module):
         self.n_hidden = n_hidden
         self.n_latent = n_latent
         self.n_causal = n_causal
+        self.n_state = n_state
         self.n_spurious = n_latent - n_causal
         # self.n_controls = n_controls
         # self.warm_up = 0
@@ -106,7 +108,7 @@ class DCDVAE(nn.Module):
         )
         self.dpd_model = DynamicPhenotypeDescriptor(
             self.n_latent,
-            n_hidden=n_hidden,
+            n_state=n_state,
             dropout_rate=dropout_rate_dpd,
             n_layers=n_layers_dpd,
             batch_norm=use_batch_norm_dpd,
@@ -145,8 +147,7 @@ class DCDVAE(nn.Module):
             alpha_dpd=alpha_dpd,
         )
 
-    @staticmethod
-    def compute_loss(model_outputs, x, y, imb_factor=None):
+    def compute_loss(self, model_outputs, x, y, imb_factor=None):
         # get model
         latent1, latent2, x_rec1, x_rec2, feat_w, org_dpd, alpha_dpd, = model_outputs.values()
 
@@ -168,21 +169,42 @@ class DCDVAE(nn.Module):
         # feature weight l1 loss
         # feat_w = feat_w.mean(dim=0) if feat_w.dim() == 2 else feat_w
         feat_l1_loss = torch.sum(torch.abs(feat_w))
-        # DPD binary classification loss
-        # Calculate pos_weight if im_factor is not None
-        if imb_factor is not None:
-            num_pos = y.sum().item()
-            num_neg = y.size(0) - num_pos
-            if num_pos == 0 or num_neg == 0:
-                pos_weight = torch.tensor(1.0, dtype=torch.float32, device=y.device)
+        # **4. DPD loss (classification loss)**
+        if self.n_state == 2:
+            # **Binary classification or 0-1 continuous label**
+            if y.min() >= 0 and y.max() <= 1:
+                pos_weight = None
             else:
-                pos_weight = (num_neg / num_pos) * imb_factor
-                pos_weight = torch.tensor(pos_weight, dtype=torch.float32, device=y.device)
-        else:
-            pos_weight = torch.tensor(1.0, dtype=torch.float32, device=y.device)
-        # dpd_loss = F.binary_cross_entropy(org_prob.squeeze(), y, reduction="none")
-        dpd_loss = F.binary_cross_entropy_with_logits(org_logit.squeeze(), y, pos_weight=pos_weight, reduction='none')
+                if imb_factor is not None:
+                    num_pos = (y == 1).sum().float()
+                    num_neg = (y == 0).sum().float()
+                    if num_pos == 0 or num_neg == 0:
+                        pos_weight = torch.tensor(1.0, dtype=torch.float32, device=y.device)
+                    else:
+                        pos_weight = torch.tensor((num_neg / num_pos) * imb_factor, dtype=torch.float32,
+                                                  device=y.device)
+                else:
+                    pos_weight = None
 
+            dpd_loss = F.binary_cross_entropy_with_logits(org_logit.squeeze(), y, pos_weight=pos_weight,
+                                                          reduction='none')
+
+        elif self.n_state > 2:
+            # **Multi-class classification loss (CrossEntropy)**
+            if imb_factor is not None:
+                class_counts = torch.bincount(y.long())  # Count number of samples per class
+                total_samples = y.numel()
+                class_weights = total_samples / (class_counts.float() + 1e-6)  # Avoid division by zero
+                class_weights = class_weights / class_weights.mean()  # Normalize
+                class_weights = class_weights.to(org_logit.device)
+                loss_fn = torch.nn.CrossEntropyLoss(weight=class_weights, reduction='none')
+            else:
+                loss_fn = torch.nn.CrossEntropyLoss(reduction='none')
+
+            dpd_loss = loss_fn(org_logit, y.long())
+
+        else:
+            raise ValueError(f"Invalid `n_state={self.n_state}`. It should be >=2.")
         # fidelity kl divergence loss
         alpha_probs = torch.cat((alpha_prob, 1 - alpha_prob), dim=1)
         org_probs = torch.cat((org_prob, 1 - org_prob), dim=1)
@@ -294,7 +316,7 @@ class DCDVAE(nn.Module):
                     "fide_kl_loss": 2.0,
                     "causal_loss": 3.0,
                 }
-        elif scheme == "lusa":
+        elif scheme == "luas":
             if current_epoch < max_epochs * 0.10:
                 # First quarter of training: emphasize reconstruction loss
                 loss_weights = {
@@ -384,7 +406,51 @@ class DCDVAE(nn.Module):
                     "fide_kl_loss": 0.0,
                     "causal_loss": 0.0,
                 }
-
+        elif scheme == "ESC":
+            if current_epoch < max_epochs * 0.10:
+                # First quarter of training: emphasize reconstruction loss
+                loss_weights = {
+                    "rec_loss1": 1.0,
+                    "rec_loss2": 1.0,
+                    "z_kl_loss": 0.00,
+                    "feat_l1_loss": 0.1,
+                    "dpd_loss": 0.01,
+                    "fide_kl_loss": 0.0,
+                    "causal_loss": 0.0,
+                }
+            elif current_epoch < max_epochs * 0.40:
+                # Second quarter of training: transition from reconstruction to KL loss
+                loss_weights = {
+                    "rec_loss1": 1.0,
+                    "rec_loss2": 1.0,
+                    "z_kl_loss": 0.01,
+                    "feat_l1_loss": 0.01,
+                    "dpd_loss": 0.00,
+                    "fide_kl_loss": 0.0,
+                    "causal_loss": 0.0,
+                }
+            elif current_epoch < max_epochs * 0.9:
+                # Third quarter of training: emphasize KL loss
+                loss_weights = {
+                    "rec_loss1": 1.0,
+                    "rec_loss2": 1.0,
+                    "z_kl_loss": 0.01,
+                    "feat_l1_loss": 0.00,
+                    "dpd_loss": 2.0,
+                    "fide_kl_loss": 0.0,
+                    "causal_loss": 0.0,
+                }
+            else:
+                # Fourth quarter of training: transition from KL to causal loss
+                loss_weights = {
+                    "rec_loss1": 0.5,
+                    "rec_loss2": 0.5,
+                    "z_kl_loss": 0.10,
+                    "feat_l1_loss": 0.00,
+                    "dpd_loss": 2.0,
+                    "fide_kl_loss": 1.0,
+                    "causal_loss": 1.0,
+                }
         return loss_weights
 
 
