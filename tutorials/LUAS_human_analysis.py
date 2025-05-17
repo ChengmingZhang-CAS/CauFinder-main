@@ -2,29 +2,8 @@
 # coding: utf-8
 
 import os
-from math import ceil, floor
-from typing import Dict, List, Optional, Union
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import numpy as np
 import pandas as pd
-from statistics import stdev
-from numpy import nanstd, isnan, nan
-import random
-from scipy import linalg
-import torch
-from anndata import AnnData, concat
-from sklearn.datasets import make_blobs
-from sklearn.preprocessing import StandardScaler
-from sklearn.feature_selection import mutual_info_classif
-from CauFinder.dataloader import zscore_normalization, apply_activation
-from CauFinder.benchmark import run_caufinder121
-import chardet
 from CauFinder.caufinder_main import CausalFinder
-from CauFinder.benchmark import cumulative_weight_sum_rate
-from scipy.stats import mannwhitneyu, ttest_ind
-from sklearn.decomposition import PCA
 from CauFinder.utils import set_seed, plot_feature_boxplots, merge_basic_driver, merge_complex_driver
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -32,7 +11,6 @@ from sklearn.decomposition import PCA
 from CauFinder.utils import load_luas_human_adata, human_all_adata, human_data_direction, calculate_w1_w2, find_index
 from CauFinder.utils import result_add_direction, plot_control_scores, plot_control_scores_by_category
 from CauFinder.utils import plot_3d_state_transition, plot_causal_feature_transitions
-import umap
 
 import scanpy as sc
 import pickle as pkl
@@ -109,7 +87,7 @@ if train_new_model:
     drivers = driver_total
 else:
     # Define model path
-    model_path = os.path.join(data_path, 'human_model.pkl')
+    model_path = os.path.join(data_path, 'human_seed60.pkl')
     # Load pre-trained model and driver info
     with open(model_path, 'rb') as file:
         model = pkl.load(file)
