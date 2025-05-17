@@ -67,17 +67,17 @@ def run_caufinder(
         use_batch_norm_dpd=use_batch_norm_dpd,
         pdp_linear=pdp_linear,
     )
-    model.train(max_epochs=300, stage_training=True)
-    shap_df = cumulative_weight_sum_rate(
-        model.get_feature_weights(sort_by_weight=True, method="SHAP")
-    )
-    grad_df = cumulative_weight_sum_rate(
-        model.get_feature_weights(sort_by_weight=True, method="Grad")
-    )
-    both_df = cumulative_weight_sum_rate(
-        model.get_feature_weights(sort_by_weight=True, method="Both")
-    )
-    return shap_df, grad_df, both_df
+    model.train(max_epochs=300, stage_training=True, weight_scheme='ESC')
+    # shap_df = cumulative_weight_sum_rate(
+    #     model.get_feature_weights(sort_by_weight=True, method="SHAP")
+    # )
+    # grad_df = cumulative_weight_sum_rate(
+    #     model.get_feature_weights(sort_by_weight=True, method="Grad")
+    # )
+    # both_df = cumulative_weight_sum_rate(
+    #     model.get_feature_weights(sort_by_weight=True, method="Both")
+    # )
+    # return shap_df, grad_df, both_df
 
 
 # %% Run CauFinder (our model)
@@ -1547,3 +1547,77 @@ def zscore_normalization(X):
     z_score_X = (X - mean) / std
 
     return z_score_X
+
+def run_time_test(
+    n_samples_list: List[int] = [1000, 2000, 5000, 10000, 20000, 50000],  # Added type hint and default
+    n_dataset: int = 10,
+    save_path: Optional[str] = None,
+    **model_kwargs,
+):
+    """
+    Runs time tests for a model on simulated datasets of varying sizes.
+
+    Args:
+        n_samples_list: A list of sample sizes for the simulated datasets.
+        n_dataset: The number of times to repeat the test for each sample size.
+        save_path: The path to save the results (CSV and PDF).  If None,
+            results are not saved.
+        model_kwargs: Keyword arguments to pass to the model.
+
+    Returns:
+        pandas.DataFrame:  A DataFrame containing the run times.
+    """
+    import time as t
+    results = []
+    all_times = []  # Store all run times for box plot
+    for n_samples in n_samples_list:
+        print(f"Testing with n_samples = {n_samples}")
+        run_times = []
+        for i in range(n_dataset):
+            print(f"  Dataset {i + 1}/{n_dataset}")
+
+            # Reset the seed for each dataset
+            set_seed(44)
+            adata = generate_synthetic(n_samples=n_samples)
+
+            start_time = t.time()
+            run_caufinder(adata=adata, **model_kwargs)  # Run model
+            end_time = t.time()
+
+            run_time = (end_time - start_time) / 60  # Convert seconds to minutes
+            run_times.append(run_time)
+            print(f"    Run time: {run_time:.2f} minutes")
+
+        results.append(run_times)
+        all_times.extend([[n_samples, time] for time in run_times])  # For box plot
+
+        # Create DataFrame for CSV
+    df_results = pd.DataFrame(results, index=n_samples_list, columns=[f"Run_{i + 1}" for i in range(n_dataset)])
+    df_results.index.name = "n_samples"
+
+    if save_path:
+        os.makedirs(save_path, exist_ok=True)
+        csv_filename = os.path.join(save_path, "runtime_results.csv")
+        df_results.to_csv(csv_filename)
+        print(f"Results saved to {csv_filename}")
+
+    # Convert all_times DataFrame
+    df_all_times = pd.DataFrame(all_times, columns=["n_samples", "runtime"])
+    df_all_times["runtime"] /= 60  # Convert runtime to minutes
+
+    # Create Box Plot
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(x="n_samples", y="runtime", data=df_all_times)
+    plt.xlabel("Number of Samples")
+    plt.ylabel("Run Time (minutes)")  # Update to minutes
+    plt.title("Run Time vs. Sample Size")
+    plt.xscale("log")  # Use log scale for better visualization
+
+    if save_path:
+        pdf_filename = os.path.join(save_path, "runtime_boxplot.pdf")
+        plt.savefig(pdf_filename)
+        print(f"Box plot saved to {pdf_filename}")
+
+    plt.show()  # Always show the plot
+
+    return df_results
