@@ -452,6 +452,8 @@ class CausalFinder(nn.Module):
         if sort_by_weight:
             weights_df = weights_df.sort_values(by="weight", ascending=False)
 
+        # Ensure 2D before creating DataFrame
+        weights_full = np.squeeze(weights_full)
         weights_full = pd.DataFrame(weights_full, index=self.adata.obs_names, columns=self.adata.var_names)
 
         return weights_df, weights_full

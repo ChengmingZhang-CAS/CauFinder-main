@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
-
+import sys
 import os
 import pandas as pd
+sys.path.append("")
 from CauFinder.caufinder_main import CausalFinder
 from CauFinder.utils import set_seed, plot_feature_boxplots, merge_basic_driver, merge_complex_driver
 import seaborn as sns
