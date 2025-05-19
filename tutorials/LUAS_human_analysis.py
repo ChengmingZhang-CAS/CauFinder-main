@@ -21,7 +21,6 @@ warnings.filterwarnings("ignore")
 
 BASE_DIR = r"E:\Project_Research\CauFinder_Project\CauFinder-master"
 
-# In[4]:
 
 case_dir = os.path.join(BASE_DIR, 'LUAS', 'human')
 data_path = os.path.join(case_dir, 'data')
@@ -35,20 +34,19 @@ prior_network = pd.read_csv(network_path, index_col=None, header=0)
 adata_raw, adata_filter = load_luas_human_adata(data_dir=data_path, tf_list=tf_list)
 adata = adata_filter.copy()
 
-# In[5]:
-
 # with open(os.path.join(output_path, 'adata_filter.pkl'), 'wb') as file:
 #     pkl.dump(adata_filter, file)
 # with open(os.path.join(output_path, 'adata.pkl'), 'wb') as file:
 #     pkl.dump(adata, file)
 
-# In[6]:
 
 # We recommend using the pre-trained drivers obtained after 100 runs of training.
 # Set to True if you want to train the model from scratch
-train_new_model = False  # Default is to load the pre-trained model
+train_new_model = True  # Default is to load the pre-trained model
 
 if train_new_model:
+    seed = 42
+    set_seed(seed)
     # Initialize and train the model from scratch
     model = CausalFinder(
         adata=adata,
@@ -67,24 +65,45 @@ if train_new_model:
     )
     model.train(max_epochs=400, stage_training=True)
 
-    # SHAP
+    # === Extract SHAP-based feature importance ===
+    # This step computes per-gene importance scores using SHAP, without using any prior network.
+    # All genes receive a score (no filtering is applied yet).
+    # weight_shap_total: mean SHAP scores across all samples
+    # weight_shap_full: per-sample SHAP scores matrix (n_samples × n_genes)
     weight_shap_total, weight_shap_full = model.get_feature_weights(sort_by_weight=True, method="SHAP")
     weight_shap_0, weight_shap_1 = model.get_class_weights(weight_shap_full, sort_by_weight=True)
-    # Grad
+    # === Extract gradient-based feature importance ===
+    # This computes gradient-based importance (signed directional signal), again for all genes.
     weight_grad_total, weight_grad_full = model.get_feature_weights(sort_by_weight=True, method="Grad")
     weight_grad_0, weight_grad_1 = model.get_class_weights(weight_grad_full, sort_by_weight=True)
-    # Class driver (SHAP or Grad for each class)
-    driver_df = model.network_master_regulators(prior_network, weight_shap_total, corr_cutoff=0.7, out_lam=1.0, ILP_lam=0.5)
-    driver_total = driver_df[driver_df['is_CauFVS_driver']].index.tolist()
-    driver_df = model.network_master_regulators(prior_network, weight_shap_0, corr_cutoff=0.7, out_lam=1.0, ILP_lam=0.5)
-    driver_0 = driver_df[driver_df['is_CauFVS_driver']].index.tolist()
-    driver_df = model.network_master_regulators(prior_network, weight_shap_1, corr_cutoff=0.7, out_lam=1.0, ILP_lam=0.5)
-    driver_1 = driver_df[driver_df['is_CauFVS_driver']].index.tolist()
 
+    # === Identify causal regulators using network-based filtering (CauFVS) ===
+    # Recommended: use SHAP values to rank candidate features (gene importance scores).
+    # CauFVS applies network constraints to select a parsimonious set of causal regulators.
+    # Global driver selection (all samples)
+    driver_df_total  = model.network_master_regulators(prior_network, weight_shap_total, corr_cutoff=0.7, out_lam=1.0, ILP_lam=0.5)
+    driver_total = driver_df_total [driver_df_total ['is_CauFVS_driver']].index.tolist()
+    driver_df_total.to_csv(os.path.join(output_path, f"driver_shap_total_seed{seed}.csv"))
+
+    # Class 0-specific driver selection
+    driver_df_0 = model.network_master_regulators(prior_network, weight_shap_0, corr_cutoff=0.7, out_lam=1.0, ILP_lam=0.5)
+    driver_0 = driver_df_0[driver_df_0['is_CauFVS_driver']].index.tolist()
+    driver_df_0.to_csv(os.path.join(output_path, f"driver_shap_0_seed{seed}.csv"))
+    # Class 1-specific driver selection
+    driver_df_1 = model.network_master_regulators(prior_network, weight_shap_1, corr_cutoff=0.7, out_lam=1.0, ILP_lam=0.5)
+    driver_1 = driver_df_1[driver_df_1['is_CauFVS_driver']].index.tolist()
+    driver_df_1.to_csv(os.path.join(output_path, f"driver_shap_1_seed{seed}.csv"))
+
+    # === Merge SHAP-based driver lists (total, class 0, class 1) into a unified driver table ===
+    # The merged table includes SHAP scores and flags for each source (e.g., is_driver_total).
+    # Direction of regulation can be roughly estimated by fold change.
     driver_info = merge_basic_driver(driver_total, driver_0, driver_1, weight_shap_total, weight_shap_0, weight_shap_1)
-    driver_info['weight_total'] = weight_grad_total.loc[driver_info.index, 'weight_dir']  # Direction for all samples
+    # Add gradient-based direction: positive = promotes 0 → 1 transition; negative = represses it
+    driver_info['direction_total'] = weight_grad_total.loc[driver_info.index, 'weight_dir']  # Direction for all samples
     driver_info['direction_0'] = weight_grad_0.loc[driver_info.index, 'weight_dir']  # Direction for Class 0
     driver_info['direction_1'] = weight_grad_1.loc[driver_info.index, 'weight_dir']  # Direction for Class 1
+    driver_info.to_csv(os.path.join(output_path, f"driver_summary_shap_seed{seed}.csv"))
+    # Downstream analysis is based on global effect (driver_total)
     drivers = driver_total
 else:
     # Define model path
