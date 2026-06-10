@@ -42,7 +42,7 @@ adata = adata_filter.copy()
 
 # We recommend using the pre-trained drivers obtained after 100 runs of training.
 # Set to True if you want to train the model from scratch
-train_new_model = True  # Default is to load the pre-trained model
+train_new_model = False  # Default is to load the pre-trained model
 
 if train_new_model:
     seed = 42
